@@ -128,7 +128,7 @@ public class ImageService {
     private void validationImageUpload(ImageUploadRequest uploadRequest) {
         if (uploadRequest.getIsLink() == null
                 || uploadRequest.getDetectObjects() == null
-                || StringUtils.hasText(uploadRequest.getFileName())) {
+                || !StringUtils.hasText(uploadRequest.getFileName())) {
             log.error("Image upload request missing required field. Request=" + uploadRequest);
             throw new InvalidImageUploadRequestException("Image upload request is missing a required field.");
         }
@@ -258,7 +258,7 @@ public class ImageService {
         }
     }
 
-    // splitting this into it's own method for better logging / exception handling
+    // splitting this into it's own method for better logging
     private Image addCachedImageObjectNames(Image image) {
         if (image.isObjectsDetected()) {
             UUID imageId = UUID.fromString(image.getImageId());
@@ -270,7 +270,7 @@ public class ImageService {
                 image.setObjects(imageObjectList);
                 return image;
             } catch (Exception ex) {
-                log.error("An error occurred getting objects for imageId=" + image.getImageId(), ex);
+                log.error("An error occurred getting cached objects for imageId=" + image.getImageId(), ex);
                 throw ex;
             }
         }
