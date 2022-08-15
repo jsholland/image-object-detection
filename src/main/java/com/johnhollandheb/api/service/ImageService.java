@@ -65,7 +65,15 @@ public class ImageService {
     }
 
     public Image getImage(String imageId) {
-        Optional<ImageEntity> imageEntity = imageRepository.findById(UUID.fromString(imageId));
+        UUID imageUuid;
+        try {
+            imageUuid = UUID.fromString(imageId);
+        } catch (IllegalArgumentException ex) {
+            log.error("Invalid image Id format. Expecting a UUID. ImageId=" + imageId);
+            throw new ImageNotFoundException();
+        }
+
+        Optional<ImageEntity> imageEntity = imageRepository.findById(imageUuid);
         if (imageEntity.isPresent()) {
             Image image = Image.fromEntity(imageEntity.get());
             return this.addCachedImageObjectNames(image);
@@ -105,7 +113,7 @@ public class ImageService {
     }
 
     public Image saveImage(ImageUploadRequest uploadRequest, String userAgent) {
-        this.validationImageUpload(uploadRequest);
+        validateImageUpload(uploadRequest);
         ImageEntity imageEntity = buildEntityFromImageUploadRequest(uploadRequest, userAgent);
         ImageEntity savedImageEntity = imageRepository.save(imageEntity);
         Image savedImage = Image.fromEntity(savedImageEntity);
@@ -126,7 +134,7 @@ public class ImageService {
         return savedImage;
     }
 
-    private void validationImageUpload(ImageUploadRequest uploadRequest) {
+    private void validateImageUpload(ImageUploadRequest uploadRequest) {
         if (uploadRequest.getIsLink() == null
                 || uploadRequest.getDetectObjects() == null
                 || !StringUtils.hasText(uploadRequest.getFileName())) {
