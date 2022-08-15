@@ -22,7 +22,6 @@ public class Image {
     private List<String> objects;
 
     public static Image fromEntity(ImageEntity imageEntity) {
-        // detected object added outside of this method
         return Image.builder()
                 .imageId(imageEntity.getId().toString())
                 .label(imageEntity.getLabel())
