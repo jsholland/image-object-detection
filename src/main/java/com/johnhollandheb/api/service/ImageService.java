@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
@@ -162,15 +163,14 @@ public class ImageService {
             log.error("An error occurred converting the upload request", ex);
             throw new ImageSaveException(ex);
         }
-
     }
 
     private File createFileFromBase64ImageData(ImageUploadRequest imageUploadRequest) {
         File file = null;
         try {
-            String imageData = this.getImageData(imageUploadRequest.getBase64ImageData());
+            String imageData = imageUploadRequest.getBase64ImageData().split(",")[1];
             InputStream inputStream = new ByteArrayInputStream(DatatypeConverter.parseBase64Binary(imageData));
-            String prefix = "heb_" + new Random().nextInt(1000) + "_";
+            String prefix = "image_" + new Random().nextInt(10000) + "_";
             file = File.createTempFile(prefix, this.getFileExtension(imageUploadRequest.getFileName()));
             OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file), 8 * 1024);
             int read;
@@ -215,8 +215,7 @@ public class ImageService {
         return (StringUtils.hasText(userAgent)) ? userAgent : DEFAULT_USER_AGENT;
     }
 
-    private String getBase64StringForLinkedImage(ImageUploadRequest uploadRequest, String userAgent) {
-        try {
+    private String getBase64StringForLinkedImage(ImageUploadRequest uploadRequest, String userAgent) throws IOException {
             URL imageUrl = new URL(uploadRequest.getLinkUrl());
             URLConnection urlConnection = imageUrl.openConnection();
             urlConnection.addRequestProperty("User-Agent", getUserAgent(userAgent));
@@ -229,23 +228,8 @@ public class ImageService {
             }
             return "data:" + uploadRequest.getImageType() + ";base64,"
                     + Base64.getEncoder().encodeToString(outputStream.toByteArray());
-        } catch (Exception ex) {
-            log.error("getBase64", ex);
-//            throw new ImageSaveException();
-            throw new RuntimeException();
-        }
     }
 
-    private String getImageData(String base64Image) {
-        try {
-            return base64Image.split(",")[1];
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            throw new RuntimeException();
-//            throw new MalformedBase64Exception();
-        }
-    }
-
-    // splitting this into it's own method for better logging / exception handling
     private List<Image> getImageEntitiesAndConvertToImageApiObjects() {
         try {
             return StreamSupport
@@ -253,12 +237,11 @@ public class ImageService {
                     .map(Image::fromEntity)
                     .collect(Collectors.toList());
         } catch (Exception ex) {
-            log.error("An error occurred getting all images", ex);
+            log.error("An error occurred getting images from repository", ex);
             throw ex;
         }
     }
 
-    // splitting this into it's own method for better logging
     private Image addCachedImageObjectNames(Image image) {
         if (image.isObjectsDetected()) {
             UUID imageId = UUID.fromString(image.getImageId());

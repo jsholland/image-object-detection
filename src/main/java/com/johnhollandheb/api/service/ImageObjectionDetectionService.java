@@ -36,7 +36,8 @@ public class ImageObjectionDetectionService {
     @Autowired
     ImageRepository imageRepository;
 
-    // in addition to persisting, we'll return the object names to avoid a database lookup for newly saved images.
+    // in addition to persisting, we'll return the object names to avoid a database
+    // lookup for newly saved image objects
     public List<String> detectImageObjects(File imageFile, String imageId) {
         try {
             String filePath = imageFile.getPath();
