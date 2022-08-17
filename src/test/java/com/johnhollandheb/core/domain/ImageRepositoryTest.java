@@ -3,6 +3,7 @@ package com.johnhollandheb.core.domain;
 import com.google.cloud.vision.v1.ImageAnnotatorClient;
 import com.johnhollandheb.JohnhollandhebApplication;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +28,8 @@ class ImageRepositoryTest {
 	@MockBean
 	ImageAnnotatorClient imageAnnotatorClient;
 
-	@AfterEach
-	public void initEach() {
+	@BeforeEach
+	void initEach() {
 		imageRepository.deleteAll();
 	}
 
