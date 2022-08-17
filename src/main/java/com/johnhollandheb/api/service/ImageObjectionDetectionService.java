@@ -46,7 +46,7 @@ public class ImageObjectionDetectionService {
             ImageAnnotatorClient client = ImageAnnotatorClient.create();
             BatchAnnotateImagesResponse response = client.batchAnnotateImages(requests);
             Set<String> objects = saveAndReturnDetectedImageObjectNames(response, imageId);
-            imageRepository.setImageDetected(UUID.fromString(imageId));
+            imageRepository.setObjectsDetected(UUID.fromString(imageId));
             return new ArrayList<>(objects);
         } catch (Exception ex) {
             log.error("An error occurred during object detection", ex);

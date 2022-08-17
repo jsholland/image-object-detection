@@ -13,5 +13,5 @@ public interface ImageRepository extends CrudRepository<ImageEntity, UUID> {
     @Transactional
     @Modifying
     @Query("update image set objects_detected = true where id = :id")
-    void setImageDetected(@Param(value = "id") UUID id);
+    void setObjectsDetected(@Param(value = "id") UUID id);
 }

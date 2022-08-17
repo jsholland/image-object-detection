@@ -25,6 +25,7 @@ dependencies {
 	implementation 'org.liquibase:liquibase-core'
 	implementation 'org.springframework.cloud:spring-cloud-gcp-dependencies:1.2.8.RELEASE'
 	implementation 'org.springframework.cloud:spring-cloud-gcp-starter-vision:1.2.8.RELEASE'
+	implementation 'junit:junit:4.13.1'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
