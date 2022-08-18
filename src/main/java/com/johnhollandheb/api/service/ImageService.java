@@ -19,15 +19,10 @@ import org.springframework.util.StringUtils;
 import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +35,7 @@ import java.util.stream.StreamSupport;
 @Component
 @Slf4j
 public class ImageService {
-    private static final String DEFAULT_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36";
+//    private static final String DEFAULT_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36";
 
     @Autowired
     ImageRepository imageRepository;
@@ -114,7 +109,12 @@ public class ImageService {
 
     public Image saveImage(ImageUploadRequest uploadRequest, String userAgent) {
         validateImageUpload(uploadRequest);
-        ImageEntity imageEntity = buildEntityFromImageUploadRequest(uploadRequest, userAgent);
+        ImageEntity imageEntity;
+        try {
+            imageEntity = uploadRequest.toEntity(userAgent);
+        } catch (Exception ex) {
+            throw new ImageSaveException(ex);
+        }
         ImageEntity savedImageEntity = imageRepository.save(imageEntity);
         Image savedImage = Image.fromEntity(savedImageEntity);
 
@@ -151,35 +151,13 @@ public class ImageService {
         }
     }
 
-    private ImageEntity buildEntityFromImageUploadRequest(ImageUploadRequest uploadRequest, String userAgent) {
-        try {
-            if (uploadRequest.getIsLink()) {
-                uploadRequest.setImageType(getFileType(uploadRequest));
-                uploadRequest.setBase64ImageData(getBase64StringForLinkedImage(uploadRequest, getUserAgent(userAgent)));
-            }
-
-            return ImageEntity.builder()
-                    .id(UUID.randomUUID())
-                    .label(getLabel(uploadRequest))
-                    .base64imageData(uploadRequest.getBase64ImageData())
-                    .fileName(uploadRequest.getFileName())
-                    .imageUrl(uploadRequest.getLinkUrl())
-                    .imageType(getFileType(uploadRequest))
-                    .objectsDetected(false) // we'll update this to true if image object detection succeeds
-                    .build();
-        } catch (Exception ex) {
-            log.error("An error occurred converting the upload request", ex);
-            throw new ImageSaveException(ex);
-        }
-    }
-
     private File createFileFromBase64ImageData(ImageUploadRequest imageUploadRequest) {
         File file = null;
         try {
             String imageData = imageUploadRequest.getBase64ImageData().split(",")[1];
             InputStream inputStream = new ByteArrayInputStream(DatatypeConverter.parseBase64Binary(imageData));
             String prefix = "image_" + new Random().nextInt(10000) + "_";
-            file = File.createTempFile(prefix, this.getFileExtension(imageUploadRequest.getFileName()));
+            file = File.createTempFile(prefix, imageUploadRequest.getFileExtension());
             OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file), 8 * 1024);
             int read;
             byte[] bytes = new byte[1000 * 1024];
@@ -195,47 +173,6 @@ public class ImageService {
             throw new ImageFileSaveException(ex);
         }
         return file;
-    }
-
-    private String getLabel(ImageUploadRequest uploadRequest) {
-        return (StringUtils.hasText(uploadRequest.getLabel())) ?
-                uploadRequest.getLabel() : getFileNameAsLabel(uploadRequest.getFileName());
-    }
-
-    // fall-back for when no label is provided
-    private String getFileNameAsLabel(String fileName) {
-        return fileName.split("\\.")[0];
-    }
-
-    private String getFileType(ImageUploadRequest uploadRequest) {
-        if (StringUtils.hasText(uploadRequest.getImageType())) {
-            return uploadRequest.getImageType();
-        }
-        return "image/" + this.getFileExtension(uploadRequest.getFileName());
-    }
-
-    private String getFileExtension(String filename) {
-        String[] fileNameParts = filename.split("\\.");
-        return fileNameParts[fileNameParts.length - 1];
-    }
-
-    private String getUserAgent(String userAgent) {
-        return (StringUtils.hasText(userAgent)) ? userAgent : DEFAULT_USER_AGENT;
-    }
-
-    private String getBase64StringForLinkedImage(ImageUploadRequest uploadRequest, String userAgent) throws IOException {
-            URL imageUrl = new URL(uploadRequest.getLinkUrl());
-            URLConnection urlConnection = imageUrl.openConnection();
-            urlConnection.addRequestProperty("User-Agent", getUserAgent(userAgent));
-            InputStream inputStream = urlConnection.getInputStream();
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int read;
-            while ((read = inputStream.read(buffer, 0, buffer.length)) != -1) {
-                outputStream.write(buffer, 0, read);
-            }
-            return "data:" + uploadRequest.getImageType() + ";base64,"
-                    + Base64.getEncoder().encodeToString(outputStream.toByteArray());
     }
 
     private List<Image> getImageEntitiesAndConvertToImageApiObjects() {
