@@ -18,7 +18,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -112,10 +114,70 @@ public class ImageServiceTest {
         assertTrue(image.getObjects().containsAll(Arrays.asList("Basketball", "Football")));
     }
 
-    // TODO: getAllImages, getImagesByObjectList, and saveImage tests
+    @Test
+    void getAllImages_addsDetectedObjects_Test() {
+        UUID imageId = UUID.randomUUID();
+        UUID imageId2 = UUID.randomUUID();
+        UUID imageId3 = UUID.randomUUID();
+        ImageEntity imageEntity = ImageEntity.builder()
+                .id(imageId)
+                .fileName("image.jpg")
+                .base64imageData("FakeDataString")
+                .imageType("image/jpg")
+                .label("Image label")
+                .imageUrl("https://google.com/image.jpg")
+                .objectsDetected(true)
+                .build();
+        imageRepository.save(imageEntity);
+        ImageEntity imageEntity2 = ImageEntity.builder()
+                .id(imageId2)
+                .fileName("image2.jpg")
+                .base64imageData("FakeDataString")
+                .imageType("image/jpg")
+                .label("Image 2 label")
+                .imageUrl("https://google.com/image2.jpg")
+                .objectsDetected(true)
+                .build();
+        imageRepository.save(imageEntity2);
+        ImageEntity imageEntity3 = ImageEntity.builder()
+                .id(imageId3)
+                .fileName("image3.jpg")
+                .base64imageData("FakeDataString")
+                .imageType("image/jpg")
+                .label("Image 3 label")
+                .imageUrl("https://google.com/image3.jpg")
+                .objectsDetected(false)
+                .build();
+        imageRepository.save(imageEntity3);
+
+        ImageObjectMapEntity objectMapEntity1 = ImageObjectMapEntity.builder()
+                .imageId(imageId)
+                .objectName("Basketball")
+                .build();
+
+        ImageObjectMapEntity objectMapEntity2 = ImageObjectMapEntity.builder()
+                .imageId(imageId2)
+                .objectName("Football")
+                .build();
+        imageObjectMapRepository.save(objectMapEntity1);
+        imageObjectMapRepository.save(objectMapEntity2);
+
+
+        List<Image> images = imageService.getAllImages();
+        assertEquals(3, images.size());
+
+        Image image2 = images.stream()
+                .filter(image -> image.getImageId().equals(imageId2.toString()))
+                .collect(Collectors.toList())
+                .get(0);
+        assertTrue(image2.getObjects().contains("Football"));
+    }
+
+    // TODO: getImagesByObjectList, and saveImage tests
     // in other words - test all public methods in the service that interact with the REST resource
 
     @Test
-    void getAllImages_addsDetectedObjects_Test() {
+    void getImagesByObjectList_Test() {
+
     }
 }
